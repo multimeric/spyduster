@@ -1,0 +1,27 @@
+[project]
+name = "spydusclient"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Michael Milton", email = "michael.r.milton@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "bs4>=0.0.2",
+    "pydantic>=2.10.6",
+    "requests>=2.32.3",
+    "typer>=0.15.2",
+]
+
+[project.scripts]
+spydus= "spydusclient:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+]
