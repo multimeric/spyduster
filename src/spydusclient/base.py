@@ -11,9 +11,10 @@ import re
 class SpydusPage:
     url: str
     content: BeautifulSoup = field(init=False)
+    cookies: dict[str, str] = field(default_factory=dict)
 
     def __post_init__(self):
-        res = requests.get(self.url)
+        res = requests.get(self.url, cookies=self.cookies)
         self.content = BeautifulSoup(res.text, features="html.parser")
 
     @cached_property

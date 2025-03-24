@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 COUNT = re.compile(r"of (\d+)")
 
 class Collection(SpydusPage):
-    @cached_property
+    @property
     def records_raw(self) -> Iterable[Tag]:
         if (isinstance(content := self.content.find(id="result-content-list"), Tag)):
             for child in content.children:
@@ -26,13 +26,17 @@ class Collection(SpydusPage):
                 return int(match.group(1))
         raise ValueError("No count found")
 
-    def next_page(self) -> Collection:
-        if isinstance(a := self.content.css.select_one(".list-inline-item.nxt"), Tag):
+    @cached_property
+    def next_page_url(self) -> str:
+        if isinstance(a := self.content.css.select_one(".list-inline-item.nxt a[href]"), Tag):
             if isinstance(link := a.attrs.get("href"), str):
-                return Collection(urljoin(self.base_url, link))
+                return urljoin(self.base_url, link)
         raise ValueError("No next page found")
 
-    def iter_links(self, all_pages: bool = True) -> Iterable[str]:
+    def next_page(self) -> Collection:
+        return Collection(self.next_page_url, cookies=self.cookies)
+
+    def iter_links(self) -> Iterable[str]:
         """
         Yields the links to the full record pages.
 
@@ -41,19 +45,28 @@ class Collection(SpydusPage):
         Params:
             all_pages: If True, the generator will yield links from all subsequent result pages. Otherwise, it will only yield links from the current page.
         """
+        for record in self.records_raw:
+            if (a := record.css.select_one("a[href]")) is not None:
+                if isinstance(link := a.attrs["href"], str):
+                    yield urljoin(self.base_url, link)
+    
+    def iter_all_links(self) -> Iterable[str]:
         coll = self
         i = 0
 
-        while i < self.count:
-            for record in self.records_raw:
-                if (a := record.css.select_one("a[href]")) is not None:
-                    if isinstance(link := a.attrs["href"], str):
-                        yield urljoin(self.base_url, link)
-                        i += 1
-            if all_pages:
-                coll = coll.next_page()
+        while True:
+            for link in coll.iter_links():
+                yield link
+                i += 1
+            
+            if i == self.count:
+                break
+
+            coll = coll.next_page()
 
 
     def iter_full_results(self, all_pages: bool = True) -> Iterable[Record]:
-        for link in self.iter_links(all_pages):
-            yield Record(link)
+        from spydusclient.record import Record
+
+        for link in self.iter_all_links() if all_pages else self.iter_links():
+            yield Record(link, cookies=self.cookies)
