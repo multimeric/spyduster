@@ -1,7 +1,8 @@
 [project]
-name = "spydusclient"
+name = "spyduster"
 version = "0.1.0"
-description = "Add your description here"
+description = "Web scraping client for the Spydus library system"
+license = "GPL-3.0"
 readme = "README.md"
 authors = [
     { name = "Michael Milton", email = "michael.r.milton@gmail.com" }
@@ -10,12 +11,8 @@ requires-python = ">=3.13"
 dependencies = [
     "bs4>=0.0.2",
     "pydantic>=2.10.6",
-    "requests>=2.32.3",
-    "typer>=0.15.2",
+    "requests>=2.32.3"
 ]
-
-[project.scripts]
-spydus= "spydusclient:app"
 
 [build-system]
 requires = ["hatchling"]
