@@ -1,7 +1,7 @@
 from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Iterable
-from urllib.parse import urlencode, urljoin, urlunparse
+from urllib.parse import urljoin
 from bs4.element import Tag
 from functools import cached_property
 import re
@@ -21,6 +21,11 @@ class Record(SpydusPage):
 
     @cached_property
     def properties_raw(self) -> dict[str, Tag]:
+        """
+        A dictionary of raw property values for the record.
+        Keys are property names such as "Title", "Author" etc, and values are the corresponding HTML tags.
+        Unfortunately the keys are not standardized and depend on the record in question.
+        """
         details = self.content.find(id="divtabRECDETAILS")
         if not isinstance(details, Tag):
             raise ValueError("Invalid document structure")
@@ -34,6 +39,11 @@ class Record(SpydusPage):
 
     @cached_property
     def properties(self) -> dict[str, list[str]]:
+        """
+        A dictionary of raw property values for the record.
+        Keys are property names such as "Title", "Author" etc, and values are a list of paragraphs corresponding to the property.
+        Unfortunately the keys are not standardized and depend on the record in question.
+        """
         return {
             key: [el.text for el in value.css.select(".d-block")]
             for key, value in self.properties_raw.items()
@@ -41,6 +51,10 @@ class Record(SpydusPage):
 
     @cached_property
     def subcollection_count(self) -> int:
+        """
+        The number of subcollections in this record.
+        If this is zero, the record likely has no subcollections.
+        """
         if (includes := self.properties_raw.get("Includes")) is not None:
             if (span := includes.css.select_one("span")) is not None:
                 if (match := NUMBER.search(span.text)) is not None:
@@ -49,6 +63,10 @@ class Record(SpydusPage):
 
     @cached_property
     def subcollection_link(self) -> str:
+        """
+        The link to the subcollection of this record.
+        This is a collection of other records that are make up this record.
+        """
         if (tag := self.properties_raw["Includes"].css.select_one("a[href]")) is not None:
             if isinstance(url := tag.attrs["href"], str):
                 return urljoin(self.base_url, url)
@@ -56,11 +74,18 @@ class Record(SpydusPage):
 
     @property
     def subcollection(self) -> Collection:
+        """
+        The subcollection of this record, as a Collection object.
+        This is a collection of other records that are make up this record.
+        """
         from spydusclient.collection import Collection
         return Collection(self.subcollection_link, cookies=self.cookies)
 
     @cached_property
     def availability_link(self) -> str:
+        """
+        The link to the availability page for this record.
+        """
         if (tag := self.content.css.select_one(".fd-availability a[href][data-toggle=modal]")) is not None:
             if isinstance(url := tag.attrs["href"], str):
                 return urljoin(self.base_url, url)
@@ -68,12 +93,15 @@ class Record(SpydusPage):
     
     @property
     def full_availability(self) -> Availability:
+        """
+        The parsed availability page for this record.
+        """
         from spydusclient.availability import Availability
         return Availability(self.availability_link, cookies=self.cookies)
 
     def yield_leaves(self) -> Iterable[Record]:
         """
-        Starting with this record, visits all records by following the subcollection links.
+        Starting with this record, visits all sub records by following the subcollection links.
         Yields records that have no subcollections.
         """
         if self.subcollection_count > 0:
@@ -84,7 +112,7 @@ class Record(SpydusPage):
 
     def yield_downloads(self, out_dir: Path) -> Iterable[Path]:
         """
-        Saves all downloads to the given directory.
+        Visits all leaf records, and if any of them have a download link, downloads the file to the given directory.
         """
         for record in self.yield_leaves():
             try:
