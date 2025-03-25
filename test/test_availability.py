@@ -1,4 +1,4 @@
-from spydusclient.availability import Availability
+from spyduster.availability import Availability
 
 
 def test_availability():

@@ -1,4 +1,4 @@
-from spydusclient.collection import Collection
+from spyduster.collection import Collection
 
 def test_lotr():
     coll = Collection("https://boroondara.spydus.com/cgi-bin/spydus.exe/REFSET/WPAC/BIBENQ/77735065?FT=BTY&QRY=BFRMT%3A%20BK&SQL=&QRYTEXT=Material%20type%3A%20Books&QFT=BTY&QFV=BK")

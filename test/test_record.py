@@ -1,4 +1,4 @@
-from spydusclient import Record
+from spyduster import Record
 
 def test_bee_sting():
     rec = Record("https://boroondara.spydus.com/cgi-bin/spydus.exe/ENQ/WPAC/BIBENQ?BRN=607007&CF=BIB&SETLVL=")
