@@ -1,6 +1,7 @@
 
 from functools import cached_property
 from typing import Iterable
+from urllib.parse import urljoin
 from spydusclient.base import SpydusPage
 
 # class AvailabilityEntry:
@@ -23,8 +24,8 @@ class Availability(SpydusPage):
     def download_link(self) -> str:
         if (a := self.content.select_one("tbody a[href]")) is not None:
             if isinstance(href := a.attrs.get("href"), str):
-                if "LOGINB" in href:
+                if "LOGINB" in href or "download" not in href:
                     raise ValueError("Login required")
-                return href
+                return urljoin(self.base_url, href)
         raise ValueError("No download link found. Are you logged in?")
 

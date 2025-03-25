@@ -1,7 +1,7 @@
 from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Iterable
-from urllib.parse import urljoin
+from urllib.parse import urlencode, urljoin, urlunparse
 from bs4.element import Tag
 from functools import cached_property
 import re
@@ -9,6 +9,7 @@ import re
 from requests import get
 from spydusclient.availability import Availability
 from spydusclient.base import SpydusPage
+from spydusclient.utils import response_filename
 
 NUMBER = re.compile(r"\d+")
 
@@ -16,6 +17,8 @@ if TYPE_CHECKING:
     from spydusclient.collection import Collection
 
 class Record(SpydusPage):
+
+
     @cached_property
     def properties_raw(self) -> dict[str, Tag]:
         details = self.content.find(id="divtabRECDETAILS")
@@ -86,8 +89,9 @@ class Record(SpydusPage):
         for record in self.yield_leaves():
             try:
                 link = record.full_availability.download_link
-                filename = out_dir / f"{record.properties['Title'][0]}.pdf"
-                filename.write_bytes(get(link, cookies=self.cookies).content)
+                res = get(link, cookies=self.cookies)
+                filename = out_dir / response_filename(res)
+                filename.write_bytes(res.content)
                 yield filename
             except ValueError:
                 continue
